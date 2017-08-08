@@ -230,7 +230,7 @@ class Endpoint(object):
                                 "endpoint/(?P<endpoint_id>[^/]*)")
 
     def __init__(self, hostname, orchestrator_id, workload_id, endpoint_id,
-                 state, mac, name=None):
+                 state, mac, name=None, active_instance_id=""):
         self.hostname = hostname
         self.orchestrator_id = orchestrator_id
         self.workload_id = workload_id
@@ -239,6 +239,7 @@ class Endpoint(object):
         self.mac = mac
         self.name = name or generate_cali_interface_name(IF_PREFIX,
                                                          endpoint_id)
+        self.active_instance_id = active_instance_id
 
         self.ipv4_nets = set()
         self.ipv6_nets = set()
@@ -254,6 +255,7 @@ class Endpoint(object):
                      "mac": self.mac,
                      "profile_ids": self.profile_ids,
                      "labels": self.labels,
+                     "active_instance_id": self.active_instance_id,
                      "ipv4_nets": sorted([str(net) for net in self.ipv4_nets]),
                      "ipv6_nets": sorted([str(net) for net in self.ipv6_nets])}
         return json.dumps(json_dict)
@@ -279,7 +281,10 @@ class Endpoint(object):
 
         json_dict = json.loads(json_str)
         ep = cls(hostname, orchestrator_id, workload_id, endpoint_id,
-                 json_dict["state"], json_dict["mac"], name=json_dict["name"])
+                 json_dict["state"], json_dict["mac"],
+                 name=json_dict["name"],
+                 active_instance_id=json_dict["active_instance_id"]
+                 if "active_instance_id" in json_dict else "")
 
         for net in json_dict["ipv4_nets"]:
             ep.ipv4_nets.add(IPNetwork(net))
@@ -357,6 +362,7 @@ class Endpoint(object):
         return (self.endpoint_id == other.endpoint_id and
                 self.state == other.state and
                 self.mac == other.mac and
+                self.active_instance_id == other.active_instance_id and
                 self.profile_ids == other.profile_ids and
                 self.ipv4_nets == other.ipv4_nets and
                 self.name == other.name and
